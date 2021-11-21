@@ -1,0 +1,171 @@
+#
+# Module: 7090CEM Computer Architecture and System Programming
+# Title: Insert sort in MIPS
+# SID: 10756746
+#
+			.data
+	space:		.asciiz " "		# " "
+	line:		.asciiz	"\n"		# "\n"
+	colonSpace:	.asciiz ": "		# ": "
+	array:		.word	0 : 100		# Array
+	array_size:	.word	5		# Size of array
+
+	arrLen:		.asciiz	"Input length of Array: "
+	infoStr:	.asciiz	"Input each value: "
+	iterStr:	.asciiz	"Input value of index "
+	sorted:		.asciiz "Sorted:"
+
+		.text
+		.globl	main
+main:
+				# |---------- Get length of array from console ------------|
+	la	$a0, arrLen		# Load "Input length of Array: " for printing
+	jal	print_string		# Print "Input length of Array: "
+	jal	read_int		# Get array length from input
+	la	$t0, array_size		# Load array_size address in $t0.
+	sw	$v0, 0($t0)		# Store returned value in $v0 to array_size.
+				# |--------------------------------------------------------|
+get_array_values:
+				# |------------ Print Instruction messages ----------------|
+	la	$a0, infoStr			# load infoStr to be printed
+	jal	print_string			# Print line to screen
+	la	$a0, line			# load line to be printed
+	jal	print_string			# Print line to screen
+				# |--------------------------------------------------------|
+intialize_array:
+	la	$t0, array			# Load array to $t0.
+	lw	$t1, array_size			# Load array_size to $t1.
+	li	$t2, 0				# $t2 = 0
+get_values_loop:
+	bge	$t2, $t1, end_get_array_values	# Continue if ($t2 < $t1).
+				# |---------- Print ("Input value of index ") -------------|
+	li	$v0, 4				# 4 = print_string syscall.
+	la	$a0, iterStr 			# load iterStr to argument register $a0.
+	syscall					# issue a system call.
+	li	$v0, 1				# 1 = print_int syscall.
+	addi	$a0, $t2, 1			# index++
+	syscall					# Print $a0 to screen    
+				# |--------------------------------------------------------|
+				
+				# |--------------------- Print (": ") ---------------------|
+	la	$a0, colonSpace			# Load ": " to be printed"
+	jal	print_string			# Print string to screen
+				# |--------------------------------------------------------|
+				
+				# |----------- Read and store int from console ------------|
+	jal	read_int			# Read integer from console
+	sw	$v0, 0($t0)			# Write int to $v0
+				# |--------------------------------------------------------|
+
+				# |--------- Load memory for next array to stored ---------|
+	addi	$t0, $t0, 4			# $t0 += 4 (Goto next slot for int)
+	addi	$t2, $t2, 1			# i++ ($t2++)
+	j	get_values_loop			# Continue;
+				# |--------------------------------------------------------|
+end_get_array_values:
+				# |------------- Print unsorted array values --------------|
+	jal	print_array			# Print Array
+				# |--------------------------------------------------------|
+				
+				# |---------- Logic for insertion sort function -----------|
+insertion_sort:
+				# |---------- Initalize array related variables -----------|
+	la	$t0, array			# load array to $t0.
+	lw	$t1, array_size			# load array array_size to $t1.
+	li	$t2, 1				# loop runner, starting from 1.
+				# |--------------------------------------------------------|
+outer_loop:
+				# |------------ Initalize outer loop variables ------------|
+	la	$t0, array			# Load array to $t0.
+	bge	$t2, $t1, sort_end		# Continue; if (t2 < $t1).
+	move	$t3, $t2			# Move $t2 to $t3.
+				# |--------------------------------------------------------|
+inner_loop:
+				# |--------------------- Get array[i] ---------------------|
+	la	$t0, array			# load array to $t0.
+	mul	$t5, $t3, 4			# store ($t3 * 4) in $t5
+	add	$t0, $t0, $t5			# Get array[i] => array address + $t5
+				# |--------------------------------------------------------|
+				
+				
+				# |------------- Core Insertion sort logic ----------------|
+	ble	$t3, $zero, end_outer_loop	# Continue; if  (t3 > 0)
+	lw	$t7, 0($t0)		  	# Load array[$t3] to $t7
+	lw	$t6, -4($t0)		  	# Load array[$t3 - 1] to $t6
+	bge	$t7, $t6, end_outer_loop 	# Continue; if (array[$t3] < array[$t3 - 1])
+	lw	$t4, 0($t0)		  	# Store value in 0($t0) in $t4
+	sw	$t6, 0($t0)		  	# Store value in 0($t0) in $t6
+	sw	$t4, -4($t0)		  	# Store value in -4($t0) in $t4
+	subi	$t3, $t3, 1		  	# $t3 -= 1
+	j	inner_loop		  	# Continue;
+				# |--------------------------------------------------------|
+end_outer_loop:
+				# |----------------- Continue outer loop ------------------|
+	addi	$t2, $t2, 1		# increment loop runner by 1.
+	j	outer_loop		# jump back to the beginning of the sort_xloop.
+				# |--------------------------------------------------------|
+sort_end:
+				# |------------- Print sorted array and "\n" --------------|
+	la	$a0, sorted		# load sorted array string to be printed to screen
+	jal	print_string		# Print string to screen
+	la	$a0, line		# Load "\n" to be printed to screen
+	jal	print_string		# Print string to screen
+	jal	print_array		# Call print routine.
+				# |--------------------------------------------------------|
+	
+end_program:
+				# |-------------- Return 0 (Exit succesfully --------------|
+	li	$v0, 10			# Load value for succesful exit syscall
+	syscall				# Exit program with a return value of 0
+				# |--------------------------------------------------------|
+			
+print_array:
+				# |------------ Initalize array and array size ------------|
+			
+	la	$t0, array		# Load array to t0 register
+	lw	$t1, array_size		# Load array array_size to t1 register
+	li	$t2, 0			# Load 0 into t2 register => i (loop counter). 
+				# |--------------------------------------------------------|
+print_loop:
+	bge	$t2, $t1, end_print	# Goto end of printing loop if (t2 > t1)
+
+				#  |------------------ print (array[i]) ------------------ |
+			
+	li	$v0, 1			# Set v0 to mode for printing integers using syscall
+	lw	$a0, 0($t0)		# Load value to a0 for syscall to print
+	syscall				# Call print integer command from syslib
+				# |--------------------------------------------------------|
+	
+				# |--------------------- print (" ") ----------------------|	
+	li	$v0, 4			# Set v0 to mode for printing strings using syscall	
+	la	$a0, space		# Load space(" ") to be printed to screen
+	syscall				# Print(" ") 
+				# |--------------------------------------------------------|
+	
+				# |------ Increment loop counter and restart process ------|
+			
+	addi	$t0, $t0, 4		# Add 4 to t0 value to get the next int in the array	
+	addi	$t2, $t2, 1		# Increment loop counter by 1, i++
+	j	print_loop		# Continue loop
+				# |--------------------------------------------------------|
+				
+				# |----------- Code run at the end of print loop ---------|
+end_print:
+	la	$a0, line		# Load new line ("\n") to be printed to screen
+	j	print_string		# Print("\n") 
+	jr	$ra			# Jump back to calling statement unconditionally
+				# |--------------------------------------------------------|
+
+				# |-------- External function for printing string ---------|
+print_string:
+	li	$v0, 4			# Set v0 to mode for printing strings using syscall
+	syscall	
+	jr	$ra			# Jump back to calling statement unconditionally
+				# |--------------------------------------------------------|
+				# |--- External function for reading integer from console -|
+read_int:
+	li	$v0, 5			# Load 5 (read int from console) to v0
+	syscall				# issue a system call.
+	jr	$ra			# Jump back to calling statement unconditionally
+				# |--------------------------------------------------------|
+
